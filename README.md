@@ -1,1 +1,1 @@
-This repo contains different tools to be used for various InfoSec purposes. Currently all tools are written in Python.
+This repo contains tools used for a variety of hacking/RE purposes on testing engagements/CTFs/other educational purposes. 
