@@ -17,50 +17,40 @@ import argparse
 fixed_buf_1=b""
 fixed_buf_2=b'686974207468652062756c6c277320657965'
 
+def hex_fixed_xor_lambda(buf_1,buf_2):
+	buf_1=b16decode(buf_1, casefold=True)	
+	print(f"unhexlified string 1: {buf_1}")
+	
+	buf_2=b16decode(buf_2, casefold=True)
+	print(f"unhexlified string 2: {buf_2}")
+	
+#	fixed_xor_lambda_alt=lambda x,y: x^y
+	fixed_xor_lambda=lambda x: x[0]^x[1]
+
+	##two versions of the same functionality; this one using a lambda
+	lambda_xor_res=bytes(fixed_xor_lambda((a,b),) for a,b in zip(buf_1,buf_2))	
+	print("xor_res_lambda:", lambda_xor_res)
+	return lambda_xor_res
+
 
 def hex_fixed_xor(buf_1,buf_2):
-	#fixed_xor_res = [0]*min(len(buf_1), len(buf_2))
-	#print(fixed_xor_res)
-	#buf_1=bytes.fromhex(buf_1)	
 	buf_1=b16decode(buf_1, casefold=True)	
-	#buf_2=bytes(buf_2)	
-	#print(f"unhexlified string: {buf_1}")
+	print(f"unhexlified string 1: {buf_1}")
 	
-	for elem_a,elem_b in zip(buf_1,buf_2):
-		print(elem_a, elem_b)
-	
-	fixed_xor_res=[(lambda x,y: bytes(x^y))(byte1,byte2) for byte1,byte2 in zip(buf_1,buf_2)]
-	
-	print(fixed_xor_res)
-
-	#buf_1=b16decode(buf_1, casefold=True)
 	buf_2=b16decode(buf_2, casefold=True)
-	#print(f"unhexlified string: {buf_1}")
-	print(f"unhexlified string: {buf_2}")
-	
-	#fixed_xor_res_2=(lambda x,y:bytes(x^y)(byte1,byte2) for byte1,byte2 in zip(buf_1,buf_2))
-	#print("fixed_xor_res_2:",fixed_xor_res_2)
-	
-	##fixed_xor_res_3=bytes((lambda x,y:(x^y)(byte1,byte2)) for byte1,byte2 in zip(buf_1,buf_2))
-	##print("fixed_xor_res_3:",fixed_xor_res_3)
+	print(f"unhexlified string 2: {buf_2}")
 
-
-
-#	fixed_xor_lambda=lambda x,y: (x^y)
 	fixed_xor_lambda=lambda x: x[0]^x[1]
 	
-	fixed_xor_res_4=bytes(fixed_xor_lambda((a,b),) for a,b in zip(buf_1,buf_2))	
-	print("fixed_xor_res_4:",fixed_xor_res_4)
-	#fixed_xor_res_5=bytes(((elem[0]^elem[1]),) for elem in zip(buf_1,buf_2))	
-	fixed_xor_res_5=bytes(a ^ b for a,b in zip(buf_1,buf_2))	
-	print("fixed_xor_res_5:",fixed_xor_res_5)
-	print(f"fixed_xor_res_5: {str(fixed_xor_res_5)}")
-#	print("final_fixed_xor_res:",final_fixed_xor)
-
-	#b64_s=b64encode(hex_s)
-	#fixed_xor_res = hex(hex_s ^ buf_2)
-	#print(f"Fixed XOR result string: {fixed_xor_res}")
-
+	##two versions of the same functionality; this one using a lambda
+	lambda_xor_res=bytes(fixed_xor_lambda((a,b),) for a,b in zip(buf_1,buf_2))	
+	print("xor_res_lambda:", lambda_xor_res)
+	
+	##two versions of the same functionality; this one not using a lambdaa
+	xor_res=bytes(a ^ b for a,b in zip(buf_1,buf_2))	
+	print("xor_res:",xor_res)
+	
+	return xor_res
 
 
 ################################################################################################################
@@ -72,16 +62,14 @@ def hex_fixed_xor(buf_1,buf_2):
 
 
 def b64_to_hex(b64s):
-	b64bytearr=bytes(b64s)
-	hex_arr=str(b64decode(b64bytearr))
-	
-	print("Base64 encoded string: \n int: {0:d};  hex: {0:X};  oct: {0:o};  bin: {0:b}".format(hex_arr))
-	return hex_arr
+	#b64bytearr=bytes(b64s)
+	hex_arr=b64decode(b64s)
+	print(f"hex arr: {hex_arr}")
+	hex_s=b16encode(hex_arr)
+	print(f"hex string: {hex_s}")
+	return hex_s
 
 
-#	hex_s=''.join(format(ord(c) for c in s[:-2])
-
-#	b64_s=b64encode(bytes.fromhex(hex_arr)).decode()
 
 def hex_to_b64(hex_bytes):
 	hex_s=b16decode(hex_bytes, casefold=True)
@@ -106,9 +94,6 @@ def setup_options():
 def b64_to_hex_preamble(parser, args):
 	ifile=args.infile
 	ofile=args.outfile
-	print("args:", args)
-	print("ifile:", ifile)
-	print("ofile:", ofile)
 	return ifile,ofile
 
 def generate_hex_rep(ifile,ofile):
@@ -124,6 +109,8 @@ def generate_fixed_xor(ifile,ofile):
 			print(line)
 			fixed_xor_result=hex_fixed_xor(line,fixed_buf_2)
 			print("Fixed xor result:", fixed_xor_result)	
+			lambda_fixed_xor_result=hex_fixed_xor_lambda(line,fixed_buf_2)
+			print("Fixed xor result with lambda:", lambda_fixed_xor_result)	
 
 ################################################################################################################
 #
