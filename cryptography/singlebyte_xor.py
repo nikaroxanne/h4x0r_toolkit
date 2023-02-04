@@ -5,8 +5,8 @@ import sys
 import os
 from base64 import b64encode,b64decode,b16decode,b16encode
 import argparse
-from collections import Counter
-
+from collections import Counter, OrderedDict
+import pprint
 
 ################################################################################################################
 #
@@ -27,6 +27,7 @@ def get_freq(text, asciiletters):
 		c[ch] += 1
 	total_letter_counts=sum(c.values())
 	letterfreq={letter: c[letter] / total_letter_counts for letter in asciiletters}
+	pprint.pprint("Letter frequencies: {0}".format(letterfreq))
 	return letterfreq
 
 ################################################################################################################
@@ -52,24 +53,42 @@ def score_ciphertext_decryption(new_pt, length_ciphertext, canonical_freq, ascii
 	#c=Counter()
 	#c=Counter((letter, new_pt.count(ord(letter))) for letter in asciiletters)
 	
-	#print("Original new_pt: {0}".format(new_pt))	
+	print("Original new_pt: {0}".format(new_pt))	
 	#updated_new_pt=b16decode(new_pt, casefold=True)
+
+	##new_pt is a bytes object so we have to convert it to a list of space-separated hex equivalent
+	##representations of each elem
+	##Yes this is annoying
+	#updated_new_pt=list(new_pt.hex(' ').split(' '))
 	#print("Updated new_pt: {0}".format(updated_new_pt))	
 	
 	#freq = {elem: float('inf') for elem in updated_new_pt}
-	freq = {elem: float('inf') for elem in new_pt}
+	#print("Canonical frequency: {0}".format(canonical_freq))
+	#freq = {chr(int(elem, base=16)): float('inf') for elem in updated_new_pt}
+	#freq={}
 	c=Counter(new_pt)
 	print("Counter for chars in new_pt: {0}".format(c))	
-	for char in new_pt:
+	test_pt=str(new_pt, encoding="latin1")
+	print("test pt: {0}".format(test_pt))
+	#for char in new_pt:
 		#if c[char] != float('inf'):
 		#c[char] += 1
 		#if char in ascii_letters:
-		freq[char] = c[char] / length_ciphertext
-	newfreq={key:abs(value - canonical_freq[key]) for key,value in freq.items() if value != float('inf')}
+	#	freq[char] = c[char] / length_ciphertext
+	#newfreq={key:value for key,value in freq.items() if value != float('inf') and key in asciiletters}
 	#newfreq={key:abs(value - canonical_freq[key]) for key,value in freq.items()}
-	score = sum(newfreq.values())
-	print("Score for {0}: {1}".format(new_pt, score))
-	return score
+	#score = sum(newfreq.values())
+	newfreq_0=get_freq(new_pt, asciiletters)
+	newfreq_1=get_freq(test_pt, asciiletters)
+	#print("frequency table: {0}".format(freq))
+	print("new frequency table from original bytes: {0}".format(newfreq_0))
+	print("new frequency table from latin1 string: {0}".format(newfreq_1))
+	#score_vals_0=[abs(value - canonical_freq[key]) for key,value in newfreq_0.items()]
+	score_vals_1=[abs(value - canonical_freq[key]) for key,value in newfreq_1.items() if key in asciiletters]
+	#score_0 = sum(score_vals_0)
+	score_1 = sum(score_vals_1)
+	print("Score for {0}: {1}".format(test_pt, score_1))
+	return score_1
 
 def freq_dist(pt, ciphertext, canonical_freq, asciiletters):
 	length_ciphertext=len(ciphertext)
@@ -92,7 +111,7 @@ def freq_dist(pt, ciphertext, canonical_freq, asciiletters):
 	print(f"frequency distribution for cipherciphertext: {freq}")
 	print(f"Standard frequency distribution :{canonical_freq}")
 	print(f"new frequency distribution of ciphertext: {newfreq}")
-	#sorted_freq=sorted(freq.items(), sorted(freq.get), reverse=True)
+	#sorted_freq=sorted(freq.items(), key=freq.get, reverse=True)
 	##don't need to use sorted() method, since a Counter object has most_common() method
 	##Create ordered Counter dictionary object, ordered by most common character, for first 15 most common
 	mostcommon_list=newfreq.most_common(30)
@@ -104,12 +123,16 @@ def freq_dist(pt, ciphertext, canonical_freq, asciiletters):
 	return mostcommon_freq		
 
 def test_decryptions(decrypted_ciphertexts, len_ciphertext, canonical_freq, asciiletters):
+	#decryption_estimate={}
 	decryption_estimate=[]
 	print("Decrypted ciphertext options: {0}".format(decrypted_ciphertexts))
 	for key,val in decrypted_ciphertexts.items():
-		score_ciphertext_decryption(bytes(val[0]), len_ciphertext, canonical_freq, asciiletters)
+		decryption_result_score=score_ciphertext_decryption(val[0], len_ciphertext, canonical_freq, asciiletters)
+		decryption_estimate.append((decryption_result_score, val[0]))
 		#score_ciphertext_decryption(option, len_ciphertext, canonical_freq, asciiletters)
-	
+	#sorted_freq=OrderedDict(sorted(decryption_estimate.items(), key=decryption_estimate.get, reverse=True))
+	sorted_freq=sorted(decryption_estimate, key=lambda kv: kv[0], reverse=True)
+	print("Top five candidate decryption options: {0}".format(sorted_freq[:-5]))
 		
 
 ################################################################################################################
