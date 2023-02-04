@@ -23,11 +23,15 @@ import pprint
 ################################################################################################################
 def get_freq(text, asciiletters):
 	c = Counter()
+	len_text=len(text)
+	letterfreq={letter: 0.0  for letter in asciiletters}
 	for ch in text:
 		c[ch] += 1
-	total_letter_counts=sum(c.values())
-	letterfreq={letter: c[letter] / total_letter_counts for letter in asciiletters}
-	pprint.pprint("Letter frequencies: {0}".format(letterfreq))
+	#total_letter_counts=sum(c.values())
+	#total_letter_counts=len(text)
+	for letter in asciiletters:
+		letterfreq[letter]=text.count(ord(letter)) / len_text
+	##pprint.pprint("Letter frequencies: {0}".format(letterfreq))
 	return letterfreq
 
 ################################################################################################################
@@ -53,7 +57,8 @@ def score_ciphertext_decryption(new_pt, length_ciphertext, canonical_freq, ascii
 	#c=Counter()
 	#c=Counter((letter, new_pt.count(ord(letter))) for letter in asciiletters)
 	
-	print("Original new_pt: {0}".format(new_pt))	
+	###print("Original new_pt: {0}".format(new_pt))	
+	###pprint.pprint("Canonical letter frequencies: {0}".format(canonical_freq))
 	#updated_new_pt=b16decode(new_pt, casefold=True)
 
 	##new_pt is a bytes object so we have to convert it to a list of space-separated hex equivalent
@@ -66,10 +71,12 @@ def score_ciphertext_decryption(new_pt, length_ciphertext, canonical_freq, ascii
 	#print("Canonical frequency: {0}".format(canonical_freq))
 	#freq = {chr(int(elem, base=16)): float('inf') for elem in updated_new_pt}
 	#freq={}
-	c=Counter(new_pt)
-	print("Counter for chars in new_pt: {0}".format(c))	
+	#c=Counter(new_pt)
+	#print("Counter for chars in new_pt: {0}".format(c))	
 	test_pt=str(new_pt, encoding="latin1")
-	print("test pt: {0}".format(test_pt))
+	
+	###print("test pt: {0}".format(test_pt))
+	
 	#for char in new_pt:
 		#if c[char] != float('inf'):
 		#c[char] += 1
@@ -79,25 +86,25 @@ def score_ciphertext_decryption(new_pt, length_ciphertext, canonical_freq, ascii
 	#newfreq={key:abs(value - canonical_freq[key]) for key,value in freq.items()}
 	#score = sum(newfreq.values())
 	newfreq_0=get_freq(new_pt, asciiletters)
-	newfreq_1=get_freq(test_pt, asciiletters)
+	##newfreq_1=get_freq(test_pt, asciiletters)
 	#print("frequency table: {0}".format(freq))
-	print("new frequency table from original bytes: {0}".format(newfreq_0))
-	print("new frequency table from latin1 string: {0}".format(newfreq_1))
-	#score_vals_0=[abs(value - canonical_freq[key]) for key,value in newfreq_0.items()]
-	score_vals_1=[abs(value - canonical_freq[key]) for key,value in newfreq_1.items() if key in asciiletters]
-	#score_0 = sum(score_vals_0)
-	score_1 = sum(score_vals_1)
-	print("Score for {0}: {1}".format(test_pt, score_1))
-	return score_1
+	###print("new frequency table from original bytes: {0}".format(newfreq_0))
+	##print("new frequency table from latin1 string: {0}".format(newfreq_1))
+	sum_newfreq=sum(newfreq_0.values())
+	if sum_newfreq == 0.0:
+		score = 0.0
+		return score
+	score_vals_0=[abs(value - canonical_freq[key]) for key,value in newfreq_0.items()]
+	#score_vals_1=[abs(value - canonical_freq[key]) for key,value in newfreq_1.items() if key in asciiletters]
+	##score_vals_1=[abs(value - newfreq_1[key]) for key,value in canonical_freq.items()]
+	score_0 = sum(score_vals_0)
+	#score_1 = sum(score_vals_1)
+	#print("Score for {0}: {1}".format(test_pt, score_1))
+	return score_0
+	#return score_1
 
 def freq_dist(pt, ciphertext, canonical_freq, asciiletters):
 	length_ciphertext=len(ciphertext)
-	#uppercase_ascii_letters=[chr(i) for i in range(65,91)]	
-	#lowercase_ascii_letters=[chr(i) for i in range(97,123)]
-	#print("lowercase ascii letters are: {0}".format(lowercase_ascii_letters))
-	#print("uppercase ascii letters are: {0}".format(uppercase_ascii_letters))
-	##freq = {chr(i): float('inf') for i in range(256)}
-
 	freq = {elem: float('inf') for elem in asciiletters}
 	c = Counter()
 	for ch in pt:
@@ -125,14 +132,15 @@ def freq_dist(pt, ciphertext, canonical_freq, asciiletters):
 def test_decryptions(decrypted_ciphertexts, len_ciphertext, canonical_freq, asciiletters):
 	#decryption_estimate={}
 	decryption_estimate=[]
-	print("Decrypted ciphertext options: {0}".format(decrypted_ciphertexts))
+	###print("Decrypted ciphertext options: {0}".format(decrypted_ciphertexts))
 	for key,val in decrypted_ciphertexts.items():
 		decryption_result_score=score_ciphertext_decryption(val[0], len_ciphertext, canonical_freq, asciiletters)
-		decryption_estimate.append((decryption_result_score, val[0]))
+		if decryption_result_score != 0.0:
+			decryption_estimate.append((decryption_result_score, val[0]))
 		#score_ciphertext_decryption(option, len_ciphertext, canonical_freq, asciiletters)
 	#sorted_freq=OrderedDict(sorted(decryption_estimate.items(), key=decryption_estimate.get, reverse=True))
 	sorted_freq=sorted(decryption_estimate, key=lambda kv: kv[0], reverse=True)
-	print("Top five candidate decryption options: {0}".format(sorted_freq[:-5]))
+	print("Top candidate decryption options: {0}".format(sorted_freq))
 		
 
 ################################################################################################################
@@ -145,8 +153,8 @@ def test_decryptions(decrypted_ciphertexts, len_ciphertext, canonical_freq, asci
 
 #def single_byte_xor(buf_1,buf_2):
 def single_byte_xor(buf_1,freq_elems):
-	print("type of freq elems: {0}".format(type(freq_elems)))
-	print("Test of freq elems: {0}".format(freq_elems))
+	###print("type of freq elems: {0}".format(type(freq_elems)))
+	###print("Test of freq elems: {0}".format(freq_elems))
 	buf_1=b16decode(bytes(buf_1), casefold=True)	
 	fixed_xor_lambda=lambda x: x[0]^x[1]
 	
@@ -160,13 +168,13 @@ def single_byte_xor(buf_1,freq_elems):
 	#	index=ord(i)
 	#	if bytes(chr(i)) in freq_elems:
 		decryption_options[i]=(bytes([(i)])*len(buf_1))
-		print(f"Decryption candidate key {i}: {decryption_options[i]}")
+		###print(f"Decryption candidate key {i}: {decryption_options[i]}")
 		#decryption_options[index]=(bytes([(index)])*len(buf_1))
 		#print(f"Decryption candidate key {i}: {decryption_options[index]}")
 		#decrypted_ciphertext[index]=[bytes(fixed_xor_lambda((a,b),) for a,b in zip(decryption_options[index],buf_1))]
 		#print(f"Decrypted ciphertext with key {i}: {decrypted_ciphertext[index]}")
 		decrypted_ciphertext[i]=[bytes(fixed_xor_lambda((a,b),) for a,b in zip(decryption_options[i],buf_1))]
-		print(f"Decrypted ciphertext with key {i}: {decrypted_ciphertext[i]}")
+		###print(f"Decrypted ciphertext with key {i}: {decrypted_ciphertext[i]}")
 
 	#decrypted_ciphertext=[bytes(fixed_xor_lambda((a,b),) for i in range(256) for a,b in zip(bytes(decryption_options[i]),buf_1))] 
 	return decrypted_ciphertext	
@@ -265,7 +273,7 @@ def generate_plaintext_bytes(pt):
 	pt_bytearr=bytearray()
 	with open(pt, 'rb') as file:
 		while (line := file.readline().rstrip()):
-			pt_bytearr.append(line)
+			pt_bytearr += bytearray(line)
 	return pt_bytearr
 
 def generate_fixed_xor(ifile,ofile):
@@ -295,29 +303,31 @@ if __name__ == '__main__':
 	ifile,ofile=b64_to_hex_preamble(parser,args)
 	#generate_hex_rep(ifile,ofile)
 	#generate_fixed_xor(ifile,ofile)
-	text=""
-	with open(pt, 'r') as pt:
-		text=pt.read()
+	#text=""
+	#with open(pt, 'r') as pt:
+	#	text=pt.read()
 	
+	text=generate_plaintext_bytes(pt)
 	#plaintext_bytes=generate_plaintext_bytes(pt)
 
 	length_text=len(text)
+	#length_text=len(plaintext_bytes)
 	uppercase_ascii=[chr(i) for i in range(65,91)]	
 	lowercase_ascii=[chr(i) for i in range(97,123)]
-	print("lowercase ascii letters are: {0}".format(lowercase_ascii))
-	print("uppercase ascii letters are: {0}".format(uppercase_ascii))
 	asciiletters=uppercase_ascii + lowercase_ascii
 	canonical_freq=get_freq(text, asciiletters)
+	#canonical_freq=get_freq(plaintext_bytes, asciiletters)
 	print("Canonical frequency: {0}".format(canonical_freq))
 	
 
-	len_ciphertext=len(text)	
+	len_ciphertext=length_text	
 
 	#mostcommonfreq = freq_dist(plaintext_bytes)
-	mostcommonfreq = freq_dist(ofile, text, canonical_freq, asciiletters)
+	#mostcommonfreq = freq_dist(ofile, text, canonical_freq, asciiletters)
+	mostcommonfreq = freq_dist(ofile, text, canonical_freq, lowercase_ascii)
 	#print("Sorted frequency distribution for item: {1}".format(freq_dist[i]) 
 	
 	#encrypt_single_byte_xor(ifile,ofile)
 	decrypted_ciphertext=encrypt_single_byte_xor(ofile,mostcommonfreq)
-	print("Decrypted ciphertexts: {0}".format(decrypted_ciphertext))
+	##print("Decrypted ciphertexts: {0}".format(decrypted_ciphertext))
 	test_decryptions(decrypted_ciphertext, len_ciphertext, canonical_freq, asciiletters)
